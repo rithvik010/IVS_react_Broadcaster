@@ -9,9 +9,8 @@ const Broadcaster = () => {
   const localStreamRef = useRef(null);
 
   // --- ADD YOUR AWS CREDENTIALS HERE ---
-  const INGEST_ENDPOINT = 'rtmps://d0b29e53f267.global-contribute.live-video.net:443/app/'; 
-  const STREAM_KEY = 'sk_ap-south-1_3KB45vyPFOex_k8WXbmoMuznMn9kcfBTaM7lM8R0d7v';
-
+const INGEST_ENDPOINT = 'YOUR_INGEST_ENDPOINT_HERE';
+const STREAM_KEY = 'YOUR_STREAM_KEY_HERE';
   useEffect(() => {
     return () => stopStream();
   }, []);
