@@ -75,8 +75,8 @@ Edit `Backend/app.js` (lines ~12-17) with your PostgreSQL credentials:
 const dbClient = new Client({
     user: 'postgres',              // Your PostgreSQL username
     host: 'localhost',             // Database host
-    database: 'apptest',           // Database name
-    password: 'mydbpass',          // ⚠️ YOUR PostgreSQL password
+    database: 'yourdbname',           // Database name
+    password: 'yourdbpass',          // ⚠️ YOUR PostgreSQL password
     port: 5432,                    // PostgreSQL port (default: 5432)
 });
 ```
