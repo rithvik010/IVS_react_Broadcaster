@@ -2,20 +2,44 @@ import React, { useState, useRef, useEffect } from 'react';
 
 const Broadcaster = () => {
   const [isStreaming, setIsStreaming] = useState(false);
-  const [statusMessage, setStatusMessage] = useState('Idle');
+  const [statusMessage, setStatusMessage] = useState('Loading stream configuration...');
+  
+  // NEW: State to hold our database credentials
+  const [streamConfig, setStreamConfig] = useState(null);
   
   const videoRef = useRef(null);
   const clientRef = useRef(null);
   const localStreamRef = useRef(null);
 
-  // --- ADD YOUR AWS CREDENTIALS HERE ---
-const INGEST_ENDPOINT = 'YOUR_INGEST_ENDPOINT_HERE';
-const STREAM_KEY = 'YOUR_STREAM_KEY_HERE';
+  // NEW: Fetch the credentials from your backend when the app loads
   useEffect(() => {
+    // We are asking the backend (which we will build next) for test_user's info
+    fetch('http://localhost:3000/api/get-stream-key?user=test_user')
+      .then(response => response.json())
+      .then(data => {
+        if (data && data.stream_key) {
+          setStreamConfig(data);
+          setStatusMessage('Idle - Ready to Stream');
+        } else {
+          setStatusMessage('Error: Could not find user in database.');
+        }
+      })
+      .catch(error => {
+        console.error("Backend fetch error:", error);
+        setStatusMessage('Error: Cannot connect to backend server. Is it running?');
+      });
+
+    // Cleanup when component unmounts
     return () => stopStream();
   }, []);
 
   const startStream = async () => {
+    // NEW: Prevent starting if we don't have the DB info yet
+    if (!streamConfig) {
+      setStatusMessage('Cannot start: Still waiting for database info.');
+      return;
+    }
+
     try {
       setStatusMessage('Requesting camera and mic permissions...');
       
@@ -33,9 +57,10 @@ const STREAM_KEY = 'YOUR_STREAM_KEY_HERE';
 
       const IVSBroadcastClient = (await import('amazon-ivs-web-broadcast')).default;
       
+      // UPDATED: Use the ingest endpoint from the database
       const client = IVSBroadcastClient.create({
         streamConfig: IVSBroadcastClient.BASIC_LANDSCAPE,
-        ingestEndpoint: INGEST_ENDPOINT,
+        ingestEndpoint: streamConfig.ingest_endpoint, 
       });
       clientRef.current = client;
 
@@ -47,7 +72,8 @@ const STREAM_KEY = 'YOUR_STREAM_KEY_HERE';
 
       setStatusMessage('Connecting to AWS IVS...');
 
-      await client.startBroadcast(STREAM_KEY);
+      // UPDATED: Use the stream key from the database
+      await client.startBroadcast(streamConfig.stream_key);
       
       setIsStreaming(true);
       setStatusMessage('LIVE: Streaming to AWS IVS!');
@@ -80,7 +106,7 @@ const STREAM_KEY = 'YOUR_STREAM_KEY_HERE';
     }
 
     setIsStreaming(false);
-    setStatusMessage('Stream stopped.');
+    setStatusMessage('Stream stopped. Ready to start again.');
   };
 
   return (
@@ -93,6 +119,13 @@ const STREAM_KEY = 'YOUR_STREAM_KEY_HERE';
           {statusMessage}
         </span>
       </div>
+
+      {/* NEW: Debugging view so you can see the data pulled from the DB */}
+      {streamConfig && (
+        <div style={{ fontSize: '12px', color: 'gray', marginBottom: '10px' }}>
+          ✓ Database connected. Key loaded: {streamConfig.stream_key.substring(0, 10)}...
+        </div>
+      )}
 
       <div style={{ background: '#000', borderRadius: '8px', overflow: 'hidden', marginBottom: '20px' }}>
         <video 
@@ -108,7 +141,17 @@ const STREAM_KEY = 'YOUR_STREAM_KEY_HERE';
         {!isStreaming ? (
           <button 
             onClick={startStream}
-            style={{ padding: '10px 20px', fontSize: '16px', backgroundColor: '#4CAF50', color: 'white', border: 'none', borderRadius: '4px', cursor: 'pointer' }}
+            // Disabled the button if we don't have the config yet
+            disabled={!streamConfig} 
+            style={{ 
+              padding: '10px 20px', 
+              fontSize: '16px', 
+              backgroundColor: streamConfig ? '#4CAF50' : '#ccc', // Gray out if disabled
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '4px', 
+              cursor: streamConfig ? 'pointer' : 'not-allowed' 
+            }}
           >
             Start Stream
           </button>
