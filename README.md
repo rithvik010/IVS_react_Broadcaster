@@ -1,4 +1,4 @@
-# GeminiStream - Full Stack Application
+# Livestream - Full Stack Application
 
 A streaming application with a React frontend and Node.js/PostgreSQL backend for managing IVS (Interactive Video Service) streaming.
 
